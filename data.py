@@ -178,6 +178,53 @@ def sample_orbits(timesteps=20, trials=5000, nbodies=3, orbit_noise=2e-1,
             'dcoords': np.stack(dx)[:N],
             'energy': np.stack(e)[:N] }
     return data, orbit_settings
+def sample_orbits_grouped(timesteps=80, trials=5000, nbodies=3, orbit_noise=2e-1,
+                  min_radius=0.9, max_radius=1.2, t_span=[0, 5], verbose=False, **kwargs):
+
+    orbit_settings = locals()
+    if verbose:
+        print("Making a dataset of near-circular 3-body orbits:")
+    
+    x, dx, e = [], [], []
+    N = trials
+    print("Generating dataset")
+    progress_bar = CustomProgressBar(total=N)
+    while len(x) < N:
+        progress_bar.update(len(x))
+        # print(len(x),N)
+        state = random_config(nu=orbit_noise, min_radius=min_radius, max_radius=max_radius)
+        orbit, settings = get_orbit(state, t_points=timesteps, t_span=t_span, nbodies=nbodies, **kwargs)
+        # orbit is of the shape [B,S,T]
+        # We can use this to simulate our problem
+
+        # The next thing first reshapes our problem to be [T,B,S] then to [T, S*B]
+        batch = orbit.transpose(2,0,1).reshape(-1,nbodies*5)
+        x_c = []
+        dx_c = []
+        e_c = []
+        # For each time step do:
+        for state in batch:
+            dstate = update(None, state)
+            
+            # reshape from [nbodies, state] where state=[m, qx, qy, px, py]
+            # the first thing is the mass, then the coordinates, then the velocities
+            # to [canonical_coords] = [qx1, qx2, qy1, qy2, px1,px2,....]
+            coords = state.reshape(nbodies,5).T[1:].flatten()
+            # dcoords literally just calls the update function but remember that this update function is supposed to retur nthe derivative
+            dcoords = dstate.reshape(nbodies,5).T[1:].flatten()
+            x_c.append(coords)
+            dx_c.append(dcoords)
+
+            shaped_state = state.copy().reshape(nbodies,5,1)
+            e_c.append(total_energy(shaped_state))
+        x.append(np.stack(x_c))
+        dx.append(np.stack(dx_c))
+        e.append(np.stack(e_c))
+    print(len(x))
+    data = {'coords': np.stack(x)[:N],
+            'dcoords': np.stack(dx)[:N],
+            'energy': np.stack(e)[:N] }
+    return data, orbit_settings
 
 
 ##### MAKE A DATASET #####

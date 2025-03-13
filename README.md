@@ -1,6 +1,8 @@
 # Foreword
 See master.ipynb for the jupyter notebook outlining our findings. Note it may be beneficial to collapse the code blocks as they are very lengthy. Our examples are included in examples/ and our data generation is found in data.py.
 
+![Video of Neural ODE simulating 3 body problem](examples/.gif)
+
 # Modeling The Three Body Problem with Symmetries
 In this project we sought to model the three body problem by incorporating different symmetries into the neural network. We use a couple of different methods for making predictions on the three body problem. First we try developing a Hamiltonian Neural Network [1] and train it to directly predict the acceleration and velocity at each time step. However, Hamiltonian ODEs rely on training using the ground truth of acceleration which greatly simplifies the problem. As in this case, the acceleration is a simple inverse square function of the inputs. Furthermore, the acceleration may be unknown when studying more complicated systems. As a result we develop several Neural ODEs [2] that model the data only using the ground truth of position and velocity. We also incorporate several symmetries into the problem using techniques from [3].
 
